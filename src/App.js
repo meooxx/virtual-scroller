@@ -1,24 +1,36 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-
+import React, { useEffect, useState } from "react";
+import ScrollView from "./components/scroll";
 function App() {
+  const [data, setData] = useState([]);
+  const renderItem = (item) => {
+    return (
+      <div key={item.id}>
+        <div>{item.id}</div>
+        <div>{item.name}</div>
+        <div>
+          <img src={item.img} alt="" />
+        </div>
+        <div>------------------------</div>
+      </div>
+    );
+  };
+  const getData = (f = false) => {
+    if (f) {
+      return;
+    }
+    return fetch("http://172.16.2.123/mock/5eb53263e8930a18fe9123b9/list")
+      .then((res) => res.json())
+      .then((res) => {
+        return res.result.data;
+      });
+  };
+  useEffect(() => {
+    getData().then((d) => setData(d));
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="App" style={{ height: "100vh" }}>
+      <ScrollView data={data} renderItem={renderItem} />
     </div>
   );
 }
