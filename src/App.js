@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import ScrollView from "./components/scroll";
+import React, { useEffect, useState } from 'react';
+import ScrollView from './components/scroll';
+import { mock } from './data';
 function App() {
   const [data, setData] = useState([]);
   const renderItem = (item) => {
@@ -8,7 +9,7 @@ function App() {
         <div>{item.id}</div>
         <div>{item.name}</div>
         <div>
-          <img src={item.img} alt="" />
+          <img src={item.img} alt='' />
         </div>
         <div>------------------------</div>
       </div>
@@ -18,8 +19,9 @@ function App() {
     if (f) {
       return;
     }
-    return fetch("http://172.16.2.123/mock/5eb53263e8930a18fe9123b9/list")
-      .then((res) => res.json())
+    // return fetch('http://172.16.2.123/mock/5eb53263e8930a18fe9123b9/list')
+    return mock()
+      // .then((res) => res.json())
       .then((res) => {
         return res.result.data;
       });
@@ -29,8 +31,8 @@ function App() {
   }, []);
 
   return (
-    <div className="App" style={{ height: "100vh" }}>
-      <ScrollView data={data} renderItem={renderItem} />
+    <div className='App' style={{ height: '100vh' }}>
+      <ScrollView  data={data.slice(4)} renderItem={renderItem} />
     </div>
   );
 }
