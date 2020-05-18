@@ -22,11 +22,15 @@ export default class ScrollView extends Component {
       !this.state.items ||
       this.state.sealItems.length !== nextProps.data.length
     ) {
-      this.setState({
-        items: nextProps.data,
-        sealItems: nextProps.data,
-      });
-      this.onScroll();
+      this.setState(
+        {
+          items: nextProps.data,
+          sealItems: nextProps.data,
+        },
+        () => {
+          this.onScroll();
+        }
+      );
     }
   }
 
@@ -67,7 +71,7 @@ export default class ScrollView extends Component {
       height > 0 &&
       i < this.items.length &&
       this.items[i] &&
-      this.items[i].height < height
+      (this.items[i].height || DEFAULT_ITEM_HEIGHT) < height
     ) {
       height -= this.items[i].height;
       i++;
@@ -82,7 +86,6 @@ export default class ScrollView extends Component {
   fill = (start = 0, end) => {
     const first = Math.max(start, 0);
     const last = end;
-    console.log(first, last);
     this.attachContent(first, last);
   };
 
@@ -111,7 +114,6 @@ export default class ScrollView extends Component {
         position += itemElements[i].offsetHeight;
         this.items[i].height = itemElements[i].offsetHeight;
       }
-
       this.anchorScrollTop = 0;
       for (let i = 0; i < this.anchorItem.index; i++) {
         this.anchorScrollTop += this.items[i].height;
@@ -119,16 +121,15 @@ export default class ScrollView extends Component {
 
       // 重新设置 scroll position
       let curPos = this.anchorScrollTop;
-      console.log(this.anchorItem, this.firstItem);
+      this.anchorScrollTop += this.anchorItem.offset;
       for (let i = this.anchorItem.index; i > this.firstItem; i--) {
         curPos -= this.items[i - 1].height;
       }
       for (let i = this.anchorItem.index; i < this.firstItem; i++) {
         curPos += this.items[i].height;
       }
-      console.log(curPos, position);
       this.scrollRunwayRef.current.style = "translate(0, " + position + "px)";
-      // this.containerRef.current.scrollTop = curPos;
+      this.containerRef.current.scrollTop = this.anchorScrollTop;
     }
   };
 
