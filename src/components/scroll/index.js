@@ -10,6 +10,9 @@ export default class ScrollView extends Component {
   scrollRunwayRef = React.createRef();
   state = {
     items: null,
+    index: 0,
+    last: 10,
+    renderItems: [],
   };
   items = [];
   componentDidMount() {
@@ -57,10 +60,25 @@ export default class ScrollView extends Component {
   // 计算最后一个元素当index
   calculateLastItem = (anchorItem, height) => {
     let delta = height + anchorItem.offset;
-    // viewport高度 / height
-    const itemNum = Math.floor(delta / DEFAULT_ITEM_HEIGHT);
-    delta -= itemNum * DEFAULT_ITEM_HEIGHT;
-    return { index: itemNum, offset: delta };
+    if (anchorItem.offset === 0) {
+      // viewport高度 / height
+      const itemNum = Math.floor(delta / DEFAULT_ITEM_HEIGHT);
+      delta -= itemNum * DEFAULT_ITEM_HEIGHT;
+      return { index: itemNum, offset: delta };
+    }
+    let i = anchorItem.index;
+    while (
+      height > 0 &&
+      this.items[i] &&
+      height > (this.items[i].height || DEFAULT_ITEM_HEIGHT)
+    ) {
+      height -= this.items[i].height;
+      i++;
+    }
+    return {
+      index: i,
+      offset: height,
+    };
   };
 
   calculateItem = (anchorItem, height) => {
@@ -86,6 +104,10 @@ export default class ScrollView extends Component {
   fill = (start = 0, end) => {
     const first = Math.max(start, 0);
     const last = end;
+    // this.setState({
+    //   first: first,
+    //   last,
+    // });
     this.attachContent(first, last);
   };
 
@@ -108,10 +130,9 @@ export default class ScrollView extends Component {
     if (hasData) {
       const itemElements = this.containerRef.current.querySelector(".items")
         .children;
-      // console.log(itemElements);
 
+      // 记录每个item高度
       for (let i = 0; i < itemElements.length; i++) {
-        position += itemElements[i].offsetHeight;
         this.items[i].height = itemElements[i].offsetHeight;
       }
       this.anchorScrollTop = 0;
@@ -122,14 +143,20 @@ export default class ScrollView extends Component {
       // 重新设置 scroll position
       let curPos = this.anchorScrollTop;
       this.anchorScrollTop += this.anchorItem.offset;
-      for (let i = this.anchorItem.index; i > this.firstItem; i--) {
-        curPos -= this.items[i - 1].height;
-      }
-      for (let i = this.anchorItem.index; i < this.firstItem; i++) {
-        curPos += this.items[i].height;
-      }
-      this.scrollRunwayRef.current.style = "translate(0, " + position + "px)";
-      this.containerRef.current.scrollTop = this.anchorScrollTop;
+      // for (let i = this.anchorItem.index; i > this.firstItem; i--) {
+      //   curPos -= this.items[i - 1].height;
+      // }
+      // for (let i = this.anchorItem.index; i < this.firstItem; i++) {
+      //   curPos += this.items[i].height;
+      // }
+      // this.scrollRunwayRef.current.style = "translate(0, " + position + "px)";
+      // this.containerRef.current.scrollTop = this.anchorScrollTop;
+      console.log(this.anchorScrollTop, first);
+      requestAnimationFrame(() => {
+        this.setState({
+          renderItems: this.items.slice(first, 17),
+        });
+      });
     }
   };
 
@@ -152,7 +179,7 @@ export default class ScrollView extends Component {
           ref={this.scrollRunwayRef}
         ></div>
         <div className="items">
-          {this.state.items && this.state.items.map(this.props.renderItem)}
+          {this.state.renderItems.map(this.props.renderItem)}
         </div>
       </div>
     );
