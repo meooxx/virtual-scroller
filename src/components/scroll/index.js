@@ -1,10 +1,11 @@
 import React, { Component } from "react";
+import throttle from "lodash.throttle";
 
 class helper {
   constructor() {}
 }
 
-const DEFAULT_ITEM_HEIGHT = 100;
+const DEFAULT_ITEM_HEIGHT = 300;
 export default class ScrollView extends Component {
   containerRef = React.createRef();
   scrollRunwayRef = React.createRef();
@@ -13,12 +14,30 @@ export default class ScrollView extends Component {
     index: 0,
     last: 10,
     renderItems: [],
+    position: 0,
   };
+
   items = [];
   componentDidMount() {
     // console.log(this.containerRef)
-    this.containerRef.current.addEventListener("scroll", this.onScroll);
+    this.containerRef.current.addEventListener("scroll", this.scrollCallBack);
   }
+  onScroll = () => {
+    const delta =
+      this.containerRef.current.scrollTop - this.anchorScrollTop || 0;
+
+    //  console.log(this.containerRef.current.scrollTop, "delta");
+    this.anchorItem = this.calculateItem(this.anchorItem, delta);
+    this.lastItem = this.calculateLastItem(
+      this.anchorItem,
+      this.containerRef.current.offsetHeight
+    );
+
+    // -10 从第几个开始， 有10个前置可以当缓存10个
+    // + 10 第几个结束之后还有10个后置
+    this.fill(this.anchorItem.index - 1, this.lastItem.index + 5);
+  };
+  scrollCallBack = throttle(this.onScroll, 50, { trailing: true });
   componentWillUnmount() {}
   componentDidUpdate(nextProps) {
     if (
@@ -37,28 +56,13 @@ export default class ScrollView extends Component {
     }
   }
 
-  onScroll = () => {
-    const delta =
-      this.containerRef.current.scrollTop - this.anchorScrollTop || 0;
-
-    //  console.log(this.containerRef.current.scrollTop, "delta");
-    this.anchorItem = this.calculateItem(this.anchorItem, delta);
-    this.lastItem = this.calculateLastItem(
-      this.anchorItem,
-      this.containerRef.current.offsetHeight
-    );
-    // console.log(this.lastItem);
-
-    // -10 从第几个开始， 有10个前置可以当缓存10个
-    // + 10 第几个结束之后还有10个后置
-    this.fill(this.anchorItem.index - 10, this.lastItem.index + 10);
-  };
   anchorItem = {
     index: 0,
     offset: 0,
   };
   // 计算最后一个元素当index
   calculateLastItem = (anchorItem, height) => {
+    if (height <= 0) return this.lastItem;
     let delta = height + anchorItem.offset;
     if (anchorItem.offset === 0) {
       // viewport高度 / height
@@ -72,8 +76,11 @@ export default class ScrollView extends Component {
       this.items[i] &&
       height > (this.items[i].height || DEFAULT_ITEM_HEIGHT)
     ) {
-      height -= this.items[i].height;
+      height -= this.items[i].height || DEFAULT_ITEM_HEIGHT;
       i++;
+    }
+    if (i - this.lastItem.index > 3) {
+      console.log(this.items, i, this.lastItem);
     }
     return {
       index: i,
@@ -82,7 +89,8 @@ export default class ScrollView extends Component {
   };
 
   calculateItem = (anchorItem, height) => {
-    if (height === 0) return anchorItem;
+    if (height <= 0) return anchorItem;
+
     height += anchorItem.offset;
     let i = anchorItem.index;
     while (
@@ -91,7 +99,7 @@ export default class ScrollView extends Component {
       this.items[i] &&
       (this.items[i].height || DEFAULT_ITEM_HEIGHT) < height
     ) {
-      height -= this.items[i].height;
+      height -= this.items[i].height || DEFAULT_ITEM_HEIGHT;
       i++;
     }
     return {
@@ -112,11 +120,12 @@ export default class ScrollView extends Component {
   };
 
   attachContent = (first, last) => {
-    // console.log(first, last);
     for (let i = first; i < last; i++) {
+      let count = 0;
       while (this.items.length <= i) {
         // 没有更多了
         if (!this.props.data[i]) break;
+        count++;
         this.items.push({
           data: { ...this.props.data[i] },
           height: 0,
@@ -132,7 +141,7 @@ export default class ScrollView extends Component {
         .children;
 
       // 记录每个item高度
-      for (let i = 0; i < itemElements.length; i++) {
+      for (let i = this.anchorItem.index; i < itemElements.length; i++) {
         this.items[i].height = itemElements[i].offsetHeight;
       }
       this.anchorScrollTop = 0;
@@ -140,23 +149,26 @@ export default class ScrollView extends Component {
         this.anchorScrollTop += this.items[i].height;
       }
 
-      // 重新设置 scroll position
-      let curPos = this.anchorScrollTop;
+      position = this.anchorScrollTop;
       this.anchorScrollTop += this.anchorItem.offset;
-      // for (let i = this.anchorItem.index; i > this.firstItem; i--) {
-      //   curPos -= this.items[i - 1].height;
-      // }
-      // for (let i = this.anchorItem.index; i < this.firstItem; i++) {
-      //   curPos += this.items[i].height;
-      // }
-      // this.scrollRunwayRef.current.style = "translate(0, " + position + "px)";
-      // this.containerRef.current.scrollTop = this.anchorScrollTop;
-      console.log(this.anchorScrollTop, first);
-      requestAnimationFrame(() => {
-        this.setState({
-          renderItems: this.items.slice(first, 17),
-        });
-      });
+
+      for (let i = this.anchorItem.index; i > first; i--) {
+        position -= this.items[i - 1].height;
+      }
+      console.log(this.anchorScrollTop, this.containerRef.current.scrollTop);
+
+      //this.scrollRunwayRef.current.style.height = position + "px";
+      const renderItems = this.items.slice(first, 17);
+
+      this.setState(
+        {
+          renderItems,
+          position,
+        },
+        () => {
+          // this.containerRef.current.scrollTop = this.anchorScrollTop;
+        }
+      );
     }
   };
 
@@ -164,21 +176,28 @@ export default class ScrollView extends Component {
     return (
       <div
         className="srollway"
-        style={{ width: "100%", height: "100%", overflow: "scroll" }}
+        style={{
+          width: "100%",
+          height: "100%",
+          overflow: "scroll",
+          paddingTop: this.state.position,
+        }}
         ref={this.containerRef}
       >
         <div
           id="scrollRunway_"
           style={{
-            position: "absolute",
-            height: "1px",
+            paddingTop: this.state.position,
             width: "1px",
-            transition: "transform 0.2s ease 0s",
+            //transition: "all 0.2s ease 0s",
             // transform: "translate(0px, 4618px)",
           }}
           ref={this.scrollRunwayRef}
         ></div>
-        <div className="items">
+        <div
+          className="items"
+          //style={{ paddingTop: this.state.position }}
+        >
           {this.state.renderItems.map(this.props.renderItem)}
         </div>
       </div>
