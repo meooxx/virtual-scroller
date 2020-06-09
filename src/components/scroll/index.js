@@ -1,10 +1,6 @@
 import React, { Component } from "react";
 import throttle from "lodash.throttle";
 
-class helper {
-  constructor() {}
-}
-
 const DEFAULT_ITEM_HEIGHT = 300;
 export default class ScrollView extends Component {
   containerRef = React.createRef();
@@ -12,6 +8,7 @@ export default class ScrollView extends Component {
   state = {
     items: null,
     index: 0,
+    preFirst: 0,
     last: 10,
     renderItems: [],
     position: 0,
@@ -33,8 +30,8 @@ export default class ScrollView extends Component {
       this.containerRef.current.offsetHeight
     );
 
-    // -10 从第几个开始， 有10个前置可以当缓存10个
-    // + 10 第几个结束之后还有10个后置
+    // -1 从第几个开始， 有1个前置可以当缓存1个
+    // + 5 第几个结束之后还有5个后置
     this.fill(this.anchorItem.index - 1, this.lastItem.index + 5);
   };
   scrollCallBack = throttle(this.onScroll, 50, { trailing: true });
@@ -79,9 +76,6 @@ export default class ScrollView extends Component {
       height -= this.items[i].height || DEFAULT_ITEM_HEIGHT;
       i++;
     }
-    if (i - this.lastItem.index > 3) {
-      console.log(this.items, i, this.lastItem);
-    }
     return {
       index: i,
       offset: height,
@@ -121,11 +115,9 @@ export default class ScrollView extends Component {
 
   attachContent = (first, last) => {
     for (let i = first; i < last; i++) {
-      let count = 0;
       while (this.items.length <= i) {
         // 没有更多了
         if (!this.props.data[i]) break;
-        count++;
         this.items.push({
           data: { ...this.props.data[i] },
           height: 0,
@@ -141,8 +133,12 @@ export default class ScrollView extends Component {
         .children;
 
       // 记录每个item高度
-      for (let i = this.anchorItem.index; i < itemElements.length; i++) {
-        this.items[i].height = itemElements[i].offsetHeight;
+      // from achorItem.index - cacheNum === 1
+      // this.anchorItem
+      let dataIndex = this.preFirst;
+      this.preFirst = first;
+      for (let i = 0; i < itemElements.length; i++) {
+        this.items[dataIndex++].height = itemElements[i].offsetHeight;
       }
       this.anchorScrollTop = 0;
       for (let i = 0; i < this.anchorItem.index; i++) {
@@ -155,10 +151,9 @@ export default class ScrollView extends Component {
       for (let i = this.anchorItem.index; i > first; i--) {
         position -= this.items[i - 1].height;
       }
-      console.log(this.anchorScrollTop, this.containerRef.current.scrollTop);
-
+      // console.log(this.anchorScrollTop, this.containerRef.current.scrollTop);
       //this.scrollRunwayRef.current.style.height = position + "px";
-      const renderItems = this.items.slice(first, 17);
+      const renderItems = this.items.slice(first, last);
 
       this.setState(
         {
@@ -166,7 +161,7 @@ export default class ScrollView extends Component {
           position,
         },
         () => {
-          // this.containerRef.current.scrollTop = this.anchorScrollTop;
+          this.containerRef.current.scrollTop = this.anchorScrollTop;
         }
       );
     }
@@ -180,7 +175,7 @@ export default class ScrollView extends Component {
           width: "100%",
           height: "100%",
           overflow: "scroll",
-          paddingTop: this.state.position,
+          //paddingTop: this.state.position,
         }}
         ref={this.containerRef}
       >
