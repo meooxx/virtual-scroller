@@ -28,6 +28,6 @@ items.slice(first, last).map(renderItem);
 
 ## Inspired By
 
-- [Article:Developers.google.com,Complexities of an Infinite Scroller](https://developers.google.com/web/updates/2016/07/infinite-scroller);[source-code:ui-element-samples/infinite-scroller ](git@github.com:GoogleChromeLabs/ui-element-samples.git)
+- [Article:Developers.google.com,Complexities of an Infinite Scroller](https://developers.google.com/web/updates/2016/07/infinite-scroller);[source-code:ui-element-samples/infinite-scroller ](https://github.com/GoogleChromeLabs/ui-element-samples)
 - [source-code:gitlab/virtual-scroller](https://gitlab.com/catamphetamine/virtual-scroller)
 - [Article from a Twitter developer:Infinite List and React](https://itsze.ro/blog/2017/04/09/infinite-list-and-react.html)
