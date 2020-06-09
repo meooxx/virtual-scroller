@@ -26,7 +26,7 @@ const items = [
 items.slice(first, last).map(renderItem);
 ```
 
-Inspired By
+## Inspired By
 
 - [Article:Developers.google.com,Complexities of an Infinite Scroller](https://developers.google.com/web/updates/2016/07/infinite-scroller);[source-code:ui-element-samples/infinite-scroller ](git@github.com:GoogleChromeLabs/ui-element-samples.git)
 - [source-code:gitlab/virtual-scroller](https://gitlab.com/catamphetamine/virtual-scroller)
